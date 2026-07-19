@@ -61,7 +61,7 @@ export const addMemory = createServerFn({ method: "POST" })
         content: data.content,
         summary: data.summary ?? null,
         confidence: data.confidence,
-        metadata: data.metadata,
+        metadata: data.metadata as never,
         pinned: data.pinned,
         embedding: embedding as unknown as string | null,
       })
