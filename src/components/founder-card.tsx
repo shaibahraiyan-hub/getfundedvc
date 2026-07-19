@@ -60,6 +60,16 @@ export function FounderCard({ founder }: { founder: Founder }) {
             <Github className="h-3.5 w-3.5" />
             GitHub
           </a>
+          <a
+            href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(founder.name + " " + founder.company)}`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={`Find ${founder.name} on LinkedIn`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Linkedin className="h-3.5 w-3.5" />
+            LinkedIn
           <Link
             to="/founders/$id"
             params={{ id: founder.id }}
