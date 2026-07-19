@@ -9,38 +9,80 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SourcingRouteImport } from './routes/sourcing'
+import { Route as FoundersRouteImport } from './routes/founders'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FoundersIndexRouteImport } from './routes/founders.index'
 
+const SourcingRoute = SourcingRouteImport.update({
+  id: '/sourcing',
+  path: '/sourcing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FoundersRoute = FoundersRouteImport.update({
+  id: '/founders',
+  path: '/founders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FoundersIndexRoute = FoundersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FoundersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/founders': typeof FoundersRouteWithChildren
+  '/sourcing': typeof SourcingRoute
+  '/founders/': typeof FoundersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/sourcing': typeof SourcingRoute
+  '/founders': typeof FoundersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/founders': typeof FoundersRouteWithChildren
+  '/sourcing': typeof SourcingRoute
+  '/founders/': typeof FoundersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/founders' | '/sourcing' | '/founders/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/sourcing' | '/founders'
+  id: '__root__' | '/' | '/founders' | '/sourcing' | '/founders/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  FoundersRoute: typeof FoundersRouteWithChildren
+  SourcingRoute: typeof SourcingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sourcing': {
+      id: '/sourcing'
+      path: '/sourcing'
+      fullPath: '/sourcing'
+      preLoaderRoute: typeof SourcingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/founders': {
+      id: '/founders'
+      path: '/founders'
+      fullPath: '/founders'
+      preLoaderRoute: typeof FoundersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +90,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/founders/': {
+      id: '/founders/'
+      path: '/'
+      fullPath: '/founders/'
+      preLoaderRoute: typeof FoundersIndexRouteImport
+      parentRoute: typeof FoundersRoute
+    }
   }
 }
 
+interface FoundersRouteChildren {
+  FoundersIndexRoute: typeof FoundersIndexRoute
+}
+
+const FoundersRouteChildren: FoundersRouteChildren = {
+  FoundersIndexRoute: FoundersIndexRoute,
+}
+
+const FoundersRouteWithChildren = FoundersRoute._addFileChildren(
+  FoundersRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  FoundersRoute: FoundersRouteWithChildren,
+  SourcingRoute: SourcingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
