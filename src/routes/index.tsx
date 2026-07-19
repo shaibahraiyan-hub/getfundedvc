@@ -9,7 +9,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard · VC Brain" },
+      { title: "Dashboard · Get Funded" },
       { name: "description", content: "Mission control for your investment pipeline." },
     ],
   }),

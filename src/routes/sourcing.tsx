@@ -16,7 +16,7 @@ import type { EnrichResult } from "@/lib/enrich.functions";
 export const Route = createFileRoute("/sourcing")({
   head: () => ({
     meta: [
-      { title: "Sourcing · VC Brain" },
+      { title: "Sourcing · Get Funded" },
       { name: "description", content: "Discover exceptional first-time founders with live GitHub + Semantic Scholar signals." },
     ],
   }),
