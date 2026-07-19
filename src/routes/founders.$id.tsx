@@ -8,10 +8,13 @@ import {
   Rocket, Linkedin, CheckCircle2, AlertCircle, Clock, ExternalLink,
   Brain, Pin, Plus, Sparkles, Filter,
 } from "lucide-react";
-import { getFounder, getFounderMemory, addFounderMemory } from "@/features/founders/data";
+import { getFounder, getFounderMemory } from "@/features/founders/data";
 import type { Founder, MemoryEntry, MemoryCategory, MemorySource } from "@/features/founders/data";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { addMemory, listMemory, togglePinMemory, deleteMemory } from "@/lib/memory.functions";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { enrichFounder, type EnrichResult } from "@/lib/enrich.functions";
 
 
@@ -550,13 +553,53 @@ function fmtDate(iso: string) {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+type DbMemory = {
+  id: string;
+  category: string;
+  source: string;
+  content: string;
+  summary: string | null;
+  confidence: number;
+  pinned: boolean;
+  created_at: string;
+};
+
+function toDisplay(rows: DbMemory[]): MemoryEntry[] {
+  const cap = (s: string) => (s.charAt(0).toUpperCase() + s.slice(1)) as MemoryCategory;
+  return rows.map((r) => ({
+    id: r.id,
+    category: cap(r.category) as MemoryCategory,
+    source: cap(r.source) as MemorySource,
+    sourceRef: r.summary ?? undefined,
+    content: r.content,
+    confidence: r.confidence,
+    pinned: r.pinned,
+    createdAt: r.created_at,
+  }));
+}
+
 function MemoryTab({ founder }: { founder: Founder }) {
-  const [entries, setEntries] = useState<MemoryEntry[]>(() => getFounderMemory(founder.id));
+  const qc = useQueryClient();
+  const seed = useMemo(() => getFounderMemory(founder.id), [founder.id]);
+  const listFn = useServerFn(listMemory);
+  const addFn = useServerFn(addMemory);
+  const togglePinFn = useServerFn(togglePinMemory);
+  const deleteFn = useServerFn(deleteMemory);
+
+  const query = useQuery({
+    queryKey: ["memory", founder.id],
+    queryFn: () => listFn({ data: { founder_key: founder.id } }),
+  });
+
+  const dbEntries = query.data ? toDisplay(query.data as DbMemory[]) : [];
+  const entries: MemoryEntry[] = dbEntries.length > 0 ? dbEntries : seed;
+
   const [filter, setFilter] = useState<MemoryCategory | "All">("All");
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
   const [draftCategory, setDraftCategory] = useState<MemoryCategory>("Signal");
   const [draftSource, setDraftSource] = useState<MemorySource>("Manual");
+  const [saving, setSaving] = useState(false);
 
   const filtered = useMemo(() => {
     return entries
@@ -573,22 +616,52 @@ function MemoryTab({ founder }: { founder: Founder }) {
     return { total, pinned, avgConfidence, risks };
   }, [entries]);
 
-  const handleAdd = () => {
-    if (!draft.trim()) return;
-    const created = addFounderMemory(founder.id, {
-      category: draftCategory,
-      content: draft.trim(),
-      source: draftSource,
-      sourceRef: "Manual entry",
-      confidence: 80,
-    });
-    setEntries((prev) => [created, ...prev]);
-    setDraft("");
+  const handleAdd = async () => {
+    if (!draft.trim() || saving) return;
+    setSaving(true);
+    try {
+      await addFn({
+        data: {
+          founder_key: founder.id,
+          category: draftCategory.toLowerCase() as "background",
+          source: draftSource.toLowerCase(),
+          content: draft.trim(),
+          confidence: 80,
+          metadata: {},
+          pinned: false,
+        },
+      });
+      setDraft("");
+      await qc.invalidateQueries({ queryKey: ["memory", founder.id] });
+      toast.success("Memory saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const togglePin = (id: string) => {
-    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, pinned: !e.pinned } : e)));
+  const togglePin = async (id: string) => {
+    const entry = dbEntries.find((e) => e.id === id);
+    if (!entry) return; // seed entries aren't persisted yet
+    try {
+      await togglePinFn({ data: { id, pinned: !entry.pinned } });
+      await qc.invalidateQueries({ queryKey: ["memory", founder.id] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Update failed");
+    }
   };
+
+  const removeEntry = async (id: string) => {
+    if (!dbEntries.find((e) => e.id === id)) return;
+    try {
+      await deleteFn({ data: { id } });
+      await qc.invalidateQueries({ queryKey: ["memory", founder.id] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
+  };
+  void removeEntry;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
