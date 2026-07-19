@@ -7,7 +7,7 @@ import { CheckCircle2, AlertTriangle } from "lucide-react";
 export const Route = createFileRoute("/screening")({
   head: () => ({
     meta: [
-      { title: "Screening · VC Brain" },
+      { title: "Screening · Get Funded" },
       { name: "description", content: "Three independent panels: Founder, Market, Idea-Market fit." },
     ],
   }),

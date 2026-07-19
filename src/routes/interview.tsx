@@ -15,7 +15,7 @@ const founders = [...allFounders].sort(
 export const Route = createFileRoute("/interview")({
   head: () => ({
     meta: [
-      { title: "AI Interviews · VC Brain" },
+      { title: "AI Interviews · Get Funded" },
       { name: "description", content: "Run AI-assisted founder interviews with live transcription, coverage tracking, and post-session synthesis." },
     ],
   }),

@@ -26,7 +26,7 @@ export const Route = createFileRoute("/founders/$id")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: loaderData ? `${loaderData.founder.name} · VC Brain` : "Founder · VC Brain" },
+      { title: loaderData ? `${loaderData.founder.name} · Get Funded` : "Founder · Get Funded" },
       { name: "description", content: loaderData?.founder.bio ?? "Founder workspace" },
     ],
   }),

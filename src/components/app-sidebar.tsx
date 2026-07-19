@@ -56,7 +56,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
-                VC Brain
+                Get Funded
               </div>
               <div className="truncate text-[11px] text-muted-foreground">
                 Sequoia · Alpha workspace

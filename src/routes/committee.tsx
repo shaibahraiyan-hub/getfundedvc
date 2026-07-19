@@ -5,7 +5,7 @@ import { Gavel } from "lucide-react";
 export const Route = createFileRoute("/committee")({
   head: () => ({
     meta: [
-      { title: "Investment Committee · VC Brain" },
+      { title: "Investment Committee · Get Funded" },
       { name: "description", content: "Memos ready for the next investment committee." },
     ],
   }),
