@@ -1,16 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Search, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  Search, Sparkles, Github, BookOpen, RefreshCw, Star, Users, FileText,
+  Quote, Pencil, ExternalLink, Loader2, CheckCircle2, AlertCircle, X,
+} from "lucide-react";
 import { FounderCard } from "@/components/founder-card";
-import { founders } from "@/features/founders/data";
+import { founders, type Founder } from "@/features/founders/data";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { enrichFounder } from "@/lib/enrich.functions";
+import type { EnrichResult } from "@/lib/enrich.functions";
 
 export const Route = createFileRoute("/sourcing")({
   head: () => ({
     meta: [
       { title: "Sourcing · VC Brain" },
-      { name: "description", content: "Discover exceptional first-time founders." },
+      { name: "description", content: "Discover exceptional first-time founders with live GitHub + Semantic Scholar signals." },
     ],
   }),
   component: Sourcing,
@@ -27,15 +34,25 @@ const stages = ["Pre-seed", "Seed", "Series A"];
 const countries = ["United States", "Germany", "India", "United Kingdom", "Netherlands"];
 const flags = ["Technical", "Accelerator", "Open Source", "Patent", "Research", "Prior Funding"];
 
+/* ---------- Handle overrides (localStorage) ---------- */
+type Handles = Record<string, { github?: string; scholar?: string }>;
+const HANDLES_KEY = "vc-brain:handles";
+function loadHandles(): Handles {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(HANDLES_KEY) ?? "{}"); } catch { return {}; }
+}
+function saveHandles(h: Handles) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(HANDLES_KEY, JSON.stringify(h));
+}
+
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       className={cn(
         "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-        active
-          ? "border-primary/50 bg-primary/15 text-primary"
-          : "border-border bg-surface text-muted-foreground hover:text-foreground",
+        active ? "border-primary/50 bg-primary/15 text-primary" : "border-border bg-surface text-muted-foreground hover:text-foreground",
       )}
     >
       {label}
@@ -48,6 +65,15 @@ function Sourcing() {
   const [industry, setIndustry] = useState<Set<string>>(new Set());
   const [country, setCountry] = useState<Set<string>>(new Set());
   const [flag, setFlag] = useState<Set<string>>(new Set());
+  const [handles, setHandles] = useState<Handles>({});
+  const [enriched, setEnriched] = useState<Record<string, EnrichResult>>({});
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+
+  const enrichFn = useServerFn(enrichFounder);
+
+  useEffect(() => { setHandles(loadHandles()); }, []);
 
   const toggle = (s: Set<string>, setter: (v: Set<string>) => void, v: string) => {
     const n = new Set(s);
@@ -64,15 +90,58 @@ function Sourcing() {
     });
   }, [q, industry, country]);
 
+  const runEnrich = async (f: Founder) => {
+    setLoadingIds((s) => new Set(s).add(f.id));
+    try {
+      const h = handles[f.id] ?? {};
+      const data = await enrichFn({ data: { name: f.name, githubHandle: h.github, scholarId: h.scholar } });
+      setEnriched((e) => ({ ...e, [f.id]: data }));
+    } catch (err) {
+      setEnriched((e) => ({ ...e, [f.id]: { github: null, scholar: null, githubCandidates: [], scholarCandidates: [], errors: { github: err instanceof Error ? err.message : "Failed" } } }));
+    } finally {
+      setLoadingIds((s) => { const n = new Set(s); n.delete(f.id); return n; });
+    }
+  };
+
+  const bulkEnrich = async () => {
+    setBulkProgress({ done: 0, total: results.length });
+    // Serial to be polite to unauth APIs
+    for (let i = 0; i < results.length; i++) {
+      await runEnrich(results[i]);
+      setBulkProgress({ done: i + 1, total: results.length });
+    }
+    setTimeout(() => setBulkProgress(null), 1500);
+  };
+
+  const updateHandle = (id: string, patch: { github?: string; scholar?: string }) => {
+    setHandles((prev) => {
+      const next = { ...prev, [id]: { ...prev[id], ...patch } };
+      saveHandles(next);
+      return next;
+    });
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-      <div>
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Sourcing
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Sourcing</div>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Discover founders</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Live signals from <span className="font-medium text-foreground">GitHub</span> and <span className="font-medium text-foreground">Semantic Scholar</span> — no auth, public data only.
+          </p>
         </div>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Discover founders
-        </h1>
+        <button
+          onClick={bulkEnrich}
+          disabled={bulkProgress !== null}
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        >
+          {bulkProgress ? (
+            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Enriching {bulkProgress.done}/{bulkProgress.total}</>
+          ) : (
+            <><Sparkles className="h-3.5 w-3.5" /> Bulk enrich {results.length}</>
+          )}
+        </button>
       </div>
 
       <div className="mt-5 rounded-xl border border-border bg-card p-4 sm:p-5">
@@ -88,11 +157,8 @@ function Sourcing() {
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>Try:</span>
           {examples.map((e) => (
-            <button
-              key={e}
-              onClick={() => setQ(e)}
-              className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs hover:text-foreground"
-            >
+            <button key={e} onClick={() => setQ(e)}
+              className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs hover:text-foreground">
               {e}
             </button>
           ))}
@@ -100,24 +166,16 @@ function Sourcing() {
 
         <div className="mt-5 space-y-3 border-t border-border pt-4">
           <FilterRow label="Industry">
-            {industries.map((i) => (
-              <Chip key={i} label={i} active={industry.has(i)} onClick={() => toggle(industry, setIndustry, i)} />
-            ))}
+            {industries.map((i) => <Chip key={i} label={i} active={industry.has(i)} onClick={() => toggle(industry, setIndustry, i)} />)}
           </FilterRow>
           <FilterRow label="Country">
-            {countries.map((c) => (
-              <Chip key={c} label={c} active={country.has(c)} onClick={() => toggle(country, setCountry, c)} />
-            ))}
+            {countries.map((c) => <Chip key={c} label={c} active={country.has(c)} onClick={() => toggle(country, setCountry, c)} />)}
           </FilterRow>
           <FilterRow label="Stage">
-            {stages.map((s) => (
-              <Chip key={s} label={s} active={false} onClick={() => {}} />
-            ))}
+            {stages.map((s) => <Chip key={s} label={s} active={false} onClick={() => {}} />)}
           </FilterRow>
           <FilterRow label="Signals">
-            {flags.map((f) => (
-              <Chip key={f} label={f} active={flag.has(f)} onClick={() => toggle(flag, setFlag, f)} />
-            ))}
+            {flags.map((f) => <Chip key={f} label={f} active={flag.has(f)} onClick={() => toggle(flag, setFlag, f)} />)}
           </FilterRow>
         </div>
       </div>
@@ -125,14 +183,32 @@ function Sourcing() {
       <div className="mt-6 flex items-baseline justify-between">
         <h2 className="text-sm font-semibold tracking-tight">
           {results.length} {results.length === 1 ? "match" : "matches"}
+          {Object.keys(enriched).length > 0 && (
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              · {Object.values(enriched).filter((e) => e.github).length} GitHub · {Object.values(enriched).filter((e) => e.scholar).length} Scholar
+            </span>
+          )}
         </h2>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Search className="h-3.5 w-3.5" /> Sorted by founder score
         </div>
       </div>
+
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {results.map((f) => (
-          <FounderCard key={f.id} founder={f} />
+          <div key={f.id} className="flex flex-col gap-2">
+            <FounderCard founder={f} />
+            <EnrichPanel
+              founder={f}
+              handles={handles[f.id] ?? {}}
+              result={enriched[f.id]}
+              loading={loadingIds.has(f.id)}
+              editing={editing === f.id}
+              onEdit={() => setEditing(editing === f.id ? null : f.id)}
+              onHandleChange={(patch) => updateHandle(f.id, patch)}
+              onRefresh={() => runEnrich(f)}
+            />
+          </div>
         ))}
       </div>
     </div>
@@ -142,10 +218,218 @@ function Sourcing() {
 function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="w-20 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </div>
+      <div className="w-20 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
 }
+
+/* ---------- Enrich panel ---------- */
+function EnrichPanel({
+  founder, handles, result, loading, editing, onEdit, onHandleChange, onRefresh,
+}: {
+  founder: Founder;
+  handles: { github?: string; scholar?: string };
+  result?: EnrichResult;
+  loading: boolean;
+  editing: boolean;
+  onEdit: () => void;
+  onHandleChange: (patch: { github?: string; scholar?: string }) => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <Sparkles className="h-3 w-3 text-primary" /> Live signals
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={onEdit} title="Edit handles"
+            className="rounded-md border border-border bg-surface p-1 text-muted-foreground hover:text-foreground">
+            <Pencil className="h-3 w-3" />
+          </button>
+          <button onClick={onRefresh} disabled={loading} title="Refresh"
+            className="rounded-md border border-border bg-surface p-1 text-muted-foreground hover:text-foreground disabled:opacity-50">
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          </button>
+        </div>
+      </div>
+
+      {editing && (
+        <div className="mt-2 space-y-2 rounded-md border border-border bg-surface p-2">
+          <HandleField
+            icon={Github}
+            label="GitHub username"
+            placeholder="e.g. torvalds"
+            value={handles.github ?? ""}
+            onChange={(v) => onHandleChange({ github: v })}
+          />
+          <HandleField
+            icon={BookOpen}
+            label="Semantic Scholar author ID"
+            placeholder="e.g. 1741101"
+            value={handles.scholar ?? ""}
+            onChange={(v) => onHandleChange({ scholar: v })}
+          />
+          <div className="flex justify-end gap-1.5">
+            <button onClick={onEdit}
+              className="rounded-md border border-border bg-card px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground">
+              Close
+            </button>
+            <button onClick={onRefresh}
+              className="rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground hover:opacity-90">
+              Apply & fetch
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!result && !loading && !editing && (
+        <button onClick={onRefresh}
+          className="mt-2 w-full rounded-md border border-dashed border-border py-2 text-[11px] font-medium text-muted-foreground hover:border-primary hover:text-primary">
+          Fetch GitHub + Scholar signals
+        </button>
+      )}
+
+      {loading && !result && (
+        <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" /> Fetching public signals…
+        </div>
+      )}
+
+      {result && (
+        <div className="mt-2 space-y-2">
+          <GithubBlock signal={result.github} error={result.errors.github} />
+          <ScholarBlock signal={result.scholar} error={result.errors.scholar} />
+          {(result.githubCandidates.length > 0 && !result.github) || (result.scholarCandidates.length > 0 && !result.scholar) ? (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-[10px] text-amber-700">
+              <div className="flex items-center gap-1 font-semibold"><AlertCircle className="h-3 w-3" /> Low-confidence match</div>
+              <div className="mt-0.5">Use the pencil icon to set the exact handle for {founder.name}.</div>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HandleField({ icon: Icon, label, value, placeholder, onChange }: {
+  icon: typeof Github; label: string; value: string; placeholder: string; onChange: (v: string) => void;
+}) {
+  return (
+    <label className="block">
+      <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <Icon className="h-3 w-3" /> {label}
+      </div>
+      <div className="relative">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-md border border-border bg-card px-2 py-1 pr-6 text-xs outline-none focus:border-primary"
+        />
+        {value && (
+          <button onClick={() => onChange("")}
+            className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-surface">
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+    </label>
+  );
+}
+
+function GithubBlock({ signal, error }: { signal: EnrichResult["github"]; error?: string }) {
+  if (error) return <SignalError icon={Github} label="GitHub" error={error} />;
+  if (!signal) return (
+    <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-2 py-1.5 text-[11px] text-muted-foreground">
+      <Github className="h-3 w-3" /> No GitHub match
+    </div>
+  );
+  return (
+    <a href={signal.profileUrl} target="_blank" rel="noreferrer"
+      className="block rounded-md border border-border bg-surface p-2 transition hover:border-primary/40">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+          <Github className="h-3 w-3" /> @{signal.login}
+          {signal.matchConfidence < 80 && (
+            <span className="rounded bg-amber-500/15 px-1 text-[9px] font-medium text-amber-700">
+              {signal.matchConfidence}% match
+            </span>
+          )}
+        </div>
+        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+      </div>
+      <div className="mt-1.5 grid grid-cols-3 gap-1 text-[10px]">
+        <Stat icon={Star} label="Stars" value={signal.aggregateStars.toLocaleString()} />
+        <Stat icon={FileText} label="Repos" value={String(signal.publicRepos)} />
+        <Stat icon={Users} label="Followers" value={signal.followers.toLocaleString()} />
+      </div>
+      {signal.topRepos[0] && (
+        <div className="mt-1.5 truncate text-[10px] text-muted-foreground">
+          Top: <span className="font-medium text-foreground">{signal.topRepos[0].name}</span> · {signal.topRepos[0].stars.toLocaleString()}★
+          {signal.topRepos[0].language && <span> · {signal.topRepos[0].language}</span>}
+        </div>
+      )}
+    </a>
+  );
+}
+
+function ScholarBlock({ signal, error }: { signal: EnrichResult["scholar"]; error?: string }) {
+  if (error) return <SignalError icon={BookOpen} label="Semantic Scholar" error={error} />;
+  if (!signal) return (
+    <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-2 py-1.5 text-[11px] text-muted-foreground">
+      <BookOpen className="h-3 w-3" /> No Scholar match
+    </div>
+  );
+  return (
+    <a href={signal.profileUrl} target="_blank" rel="noreferrer"
+      className="block rounded-md border border-border bg-surface p-2 transition hover:border-primary/40">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+          <BookOpen className="h-3 w-3" /> {signal.name}
+          {signal.matchConfidence < 80 && (
+            <span className="rounded bg-amber-500/15 px-1 text-[9px] font-medium text-amber-700">
+              {signal.matchConfidence}% match
+            </span>
+          )}
+        </div>
+        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+      </div>
+      <div className="mt-1.5 grid grid-cols-3 gap-1 text-[10px]">
+        <Stat icon={FileText} label="Papers" value={String(signal.paperCount)} />
+        <Stat icon={Quote} label="Citations" value={signal.citationCount.toLocaleString()} />
+        <Stat icon={CheckCircle2} label="h-index" value={String(signal.hIndex)} />
+      </div>
+      {signal.topPapers[0] && (
+        <div className="mt-1.5 truncate text-[10px] text-muted-foreground">
+          Top: <span className="font-medium text-foreground">{signal.topPapers[0].title}</span>
+          {signal.topPapers[0].year && <span> · {signal.topPapers[0].year}</span>}
+          <span> · {signal.topPapers[0].citationCount.toLocaleString()} cites</span>
+        </div>
+      )}
+    </a>
+  );
+}
+
+function Stat({ icon: Icon, label, value }: { icon: typeof Star; label: string; value: string }) {
+  return (
+    <div className="rounded border border-border bg-card px-1.5 py-1">
+      <div className="flex items-center gap-1 text-muted-foreground">
+        <Icon className="h-2.5 w-2.5" /> {label}
+      </div>
+      <div className="mt-0.5 font-semibold tabular-nums text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function SignalError({ icon: Icon, label, error }: { icon: typeof Github; label: string; error: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-2 py-1.5 text-[10px] text-rose-700">
+      <Icon className="h-3 w-3" /> {label}: {error}
+    </div>
+  );
+}
+
+// keep tanstack-query import registered for future mutation upgrades
+void useMutation;
