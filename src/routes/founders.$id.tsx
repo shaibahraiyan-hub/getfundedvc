@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import { getFounder, getFounderMemory } from "@/features/founders/data";
 import type { Founder, MemoryEntry, MemoryCategory, MemorySource } from "@/features/founders/data";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { addMemory, listMemory, togglePinMemory, deleteMemory } from "@/lib/memory.functions";
+import { analyzeFounder, getLatestAnalysis } from "@/lib/scoring.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { enrichFounder, type EnrichResult } from "@/lib/enrich.functions";
