@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* VC Brain — professional dark theme (Linear × Bloomberg Terminal) */
+/* VC Brain — professional light theme (Navy Trust) */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
