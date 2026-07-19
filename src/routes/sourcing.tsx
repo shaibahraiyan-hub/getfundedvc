@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { enrichFounder } from "@/lib/enrich.functions";
 import type { EnrichResult } from "@/lib/enrich.functions";
 import { discoverFoundersOnGitHub, type DiscoveredFounder } from "@/lib/discover.functions";
-import { MapPin } from "lucide-react";
+import { MapPin, Linkedin } from "lucide-react";
 
 export const Route = createFileRoute("/sourcing")({
   head: () => ({
