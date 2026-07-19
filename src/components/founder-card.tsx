@@ -70,6 +70,7 @@ export function FounderCard({ founder }: { founder: Founder }) {
           >
             <Linkedin className="h-3.5 w-3.5" />
             LinkedIn
+          </a>
           <Link
             to="/founders/$id"
             params={{ id: founder.id }}
