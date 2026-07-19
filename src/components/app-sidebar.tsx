@@ -32,7 +32,7 @@ const nav = [
   { title: "Founder Workspace", url: "/founders", icon: Users },
   { title: "Screening", url: "/screening", icon: ClipboardCheck },
   { title: "Diligence", url: "/diligence", icon: FileSearch },
-  { title: "Interview", url: "/interview", icon: MessageSquare },
+  { title: "Interview Scores", url: "/interview", icon: MessageSquare },
   { title: "Investment Committee", url: "/committee", icon: Gavel },
   { title: "Settings", url: "/settings", icon: Settings },
 ] as const;
