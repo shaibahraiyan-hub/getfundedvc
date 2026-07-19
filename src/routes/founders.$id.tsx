@@ -12,7 +12,7 @@ import { getFounder, getFounderMemory, addFounderMemory } from "@/features/found
 import type { Founder, MemoryEntry, MemoryCategory, MemorySource } from "@/features/founders/data";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { enrichFounder } from "@/lib/enrich.functions";
+import { enrichFounder, type EnrichResult } from "@/lib/enrich.functions";
 
 
 export const Route = createFileRoute("/founders/$id")({
