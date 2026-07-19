@@ -563,4 +563,4 @@ function SignalError({ icon: Icon, label, error }: { icon: typeof Github; label:
 }
 
 // keep tanstack-query import registered for future mutation upgrades
-void useMutation;
+
