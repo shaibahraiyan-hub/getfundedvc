@@ -11,6 +11,8 @@ import {
 import { getFounder, getFounderMemory, addFounderMemory } from "@/features/founders/data";
 import type { Founder, MemoryEntry, MemoryCategory, MemorySource } from "@/features/founders/data";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { enrichFounder, type EnrichResult } from "@/lib/enrich.functions";
 
 
 export const Route = createFileRoute("/founders/$id")({
@@ -203,35 +205,165 @@ function Row({ k, v }: { k: string; v: string }) {
 
 function ResearchTab({ founder }: { founder: Founder }) {
   const r = founder.research;
-  const sources = [
-    { icon: Github, name: "GitHub", summary: r.github.summary, score: r.github.score, extra: `${r.github.stars.toLocaleString()} stars · ${r.github.repos} repos` },
-    { icon: GraduationCap, name: "Semantic Scholar", summary: r.scholar.summary, score: r.scholar.score, extra: `${r.scholar.papers} papers · ${r.scholar.citations.toLocaleString()} citations` },
-    { icon: Linkedin, name: "LinkedIn", summary: r.linkedin.summary, score: r.linkedin.score, extra: "Employment verified" },
-    { icon: Rocket, name: "Product Hunt", summary: r.productHunt.summary, score: r.productHunt.score, extra: "" },
-    { icon: Newspaper, name: "News", summary: r.news.summary, score: r.news.score, extra: "" },
-  ];
+  const { data: live, isFetching, error, refetch } = useQuery<EnrichResult>({
+    queryKey: ["enrich", founder.id, founder.name],
+    queryFn: async () => {
+      let handles: { githubHandle?: string; scholarId?: string } = {};
+      try {
+        const raw = typeof window !== "undefined" ? localStorage.getItem("vc-brain:handles") : null;
+        if (raw) {
+          const all = JSON.parse(raw) as Record<string, { githubHandle?: string; scholarId?: string }>;
+          handles = all[founder.id] ?? {};
+        }
+      } catch {}
+      return enrichFounder({ data: { name: founder.name, ...handles } });
+    },
+    staleTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+  });
+
+  const gh = live?.github;
+  const sc = live?.scholar;
+
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {sources.map((s) => (
-        <div key={s.name} className="rounded-xl border border-border bg-card p-4">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2 text-xs">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          {isFetching
+            ? "Fetching live signals from GitHub & Semantic Scholar…"
+            : error
+              ? "Live enrichment failed — showing cached research."
+              : live
+                ? `Live signals updated · GitHub ${gh ? "matched" : "no match"} · Scholar ${sc ? "matched" : "no match"}`
+                : "Live signals ready."}
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="rounded-md border border-border bg-card px-2 py-1 font-medium hover:bg-surface"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="grid h-8 w-8 place-items-center rounded-md bg-surface">
-                <s.icon className="h-4 w-4 text-muted-foreground" />
+                <Github className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <div className="text-sm font-semibold">{s.name}</div>
-                {s.extra && <div className="text-[11px] text-muted-foreground">{s.extra}</div>}
+                <div className="text-sm font-semibold">GitHub {gh && <span className="ml-1 rounded bg-primary/15 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary">Live</span>}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {gh
+                    ? `${gh.aggregateStars.toLocaleString()} stars · ${gh.publicRepos} repos · ${gh.followers} followers`
+                    : `${r.github.stars.toLocaleString()} stars · ${r.github.repos} repos (cached)`}
+                </div>
               </div>
             </div>
             <div className="text-right">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Confidence</div>
-              <div className="text-sm font-semibold tabular-nums">{s.score}%</div>
+              <div className="text-sm font-semibold tabular-nums">{gh?.matchConfidence ?? r.github.score}%</div>
             </div>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">{s.summary}</p>
+          {gh ? (
+            <>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {gh.bio ?? `@${gh.login}${gh.company ? ` · ${gh.company}` : ""}`}
+              </p>
+              {gh.topRepos.length > 0 && (
+                <ul className="mt-3 space-y-1.5">
+                  {gh.topRepos.slice(0, 3).map((repo) => (
+                    <li key={repo.name} className="flex items-center justify-between gap-2 rounded-md border border-border bg-surface px-2 py-1.5 text-xs">
+                      <a href={repo.url} target="_blank" rel="noreferrer" className="truncate font-medium text-foreground hover:text-primary">
+                        {repo.name}
+                      </a>
+                      <span className="shrink-0 tabular-nums text-muted-foreground">★ {repo.stars.toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <a href={gh.profileUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                View profile <ExternalLink className="h-3 w-3" />
+              </a>
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">{r.github.summary}</p>
+          )}
         </div>
-      ))}
+
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-md bg-surface">
+                <GraduationCap className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold">Semantic Scholar {sc && <span className="ml-1 rounded bg-primary/15 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary">Live</span>}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {sc
+                    ? `${sc.paperCount} papers · ${sc.citationCount.toLocaleString()} citations · h-index ${sc.hIndex}`
+                    : `${r.scholar.papers} papers · ${r.scholar.citations.toLocaleString()} citations (cached)`}
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Confidence</div>
+              <div className="text-sm font-semibold tabular-nums">{sc?.matchConfidence ?? r.scholar.score}%</div>
+            </div>
+          </div>
+          {sc ? (
+            <>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {sc.affiliations.length > 0 ? sc.affiliations.join(" · ") : "No affiliations listed."}
+              </p>
+              {sc.topPapers.length > 0 && (
+                <ul className="mt-3 space-y-1.5">
+                  {sc.topPapers.slice(0, 3).map((p) => (
+                    <li key={p.title} className="rounded-md border border-border bg-surface px-2 py-1.5 text-xs">
+                      <div className="line-clamp-2 font-medium text-foreground">{p.title}</div>
+                      <div className="mt-0.5 text-muted-foreground">
+                        {p.year ?? "—"} · {p.venue ?? "—"} · {p.citationCount.toLocaleString()} cites
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <a href={sc.profileUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                View profile <ExternalLink className="h-3 w-3" />
+              </a>
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">{r.scholar.summary}</p>
+          )}
+        </div>
+
+        {[
+          { icon: Linkedin, name: "LinkedIn", summary: r.linkedin.summary, score: r.linkedin.score, extra: "Employment verified" },
+          { icon: Rocket, name: "Product Hunt", summary: r.productHunt.summary, score: r.productHunt.score, extra: "" },
+          { icon: Newspaper, name: "News", summary: r.news.summary, score: r.news.score, extra: "" },
+        ].map((s) => (
+          <div key={s.name} className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="grid h-8 w-8 place-items-center rounded-md bg-surface">
+                  <s.icon className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">{s.name}</div>
+                  {s.extra && <div className="text-[11px] text-muted-foreground">{s.extra}</div>}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Confidence</div>
+                <div className="text-sm font-semibold tabular-nums">{s.score}%</div>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">{s.summary}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
