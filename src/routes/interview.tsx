@@ -127,13 +127,13 @@ function InterviewPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            <Radio className="h-3.5 w-3.5" /> AI Interview Studio
+            <Trophy className="h-3.5 w-3.5" /> Interview Scores · Top-ranked founders
           </div>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
             Interview <span className="text-primary">{founder.name}</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            AI-generated interview guide tailored to unverified claims and screening gaps.
+            Ranked by combined founder + opportunity score. Only the highest-scoring founders qualify for an AI-assisted interview.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -146,24 +146,47 @@ function InterviewPage() {
         </div>
       </div>
 
-      {/* Founder selector */}
+      {/* Founder selector — ranked by score */}
       <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
-        {founders.map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setSelectedId(f.id)}
-            className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-              f.id === selectedId
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-card text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span className="grid h-5 w-5 place-items-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
-              {f.initials}
-            </span>
-            {f.name} · <span className="opacity-70">{f.company}</span>
-          </button>
-        ))}
+        {founders.map((f, i) => {
+          const active = f.id === selectedId;
+          const combined = f.founderScore + f.opportunityScore;
+          const githubUrl = `https://github.com/search?q=${encodeURIComponent(f.name)}&type=users`;
+          return (
+            <div
+              key={f.id}
+              className={`flex shrink-0 items-center gap-1 rounded-full border pr-1 text-xs font-medium transition ${
+                active
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <button
+                onClick={() => setSelectedId(f.id)}
+                className="flex items-center gap-2 py-1.5 pl-3"
+              >
+                <span className="grid h-5 w-5 place-items-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
+                  {i + 1}
+                </span>
+                <span>{f.name}</span>
+                <span className="opacity-70">· {f.company}</span>
+                <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-foreground">
+                  {combined}
+                </span>
+              </button>
+              <a
+                href={githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title={`Open ${f.name} on GitHub`}
+                className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-surface hover:text-foreground"
+              >
+                <Github className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          );
+        })}
       </div>
 
       {/* Tabs */}
