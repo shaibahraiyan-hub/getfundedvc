@@ -1,15 +1,17 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
 } from "recharts";
 import {
   ArrowLeft, MapPin, Globe, Mail, Github, GraduationCap, Newspaper,
   Rocket, Linkedin, CheckCircle2, AlertCircle, Clock, ExternalLink,
+  Brain, Pin, Plus, Sparkles, Filter,
 } from "lucide-react";
-import { getFounder } from "@/features/founders/data";
-import type { Founder } from "@/features/founders/data";
+import { getFounder, getFounderMemory, addFounderMemory } from "@/features/founders/data";
+import type { Founder, MemoryEntry, MemoryCategory, MemorySource } from "@/features/founders/data";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/founders/$id")({
   loader: ({ params }) => {
