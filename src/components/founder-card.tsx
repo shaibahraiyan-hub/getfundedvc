@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, ArrowUpRight, Github } from "lucide-react";
+import { MapPin, ArrowUpRight, Github, Linkedin } from "lucide-react";
 import type { Founder } from "@/features/founders/data";
 import { cn } from "@/lib/utils";
 
