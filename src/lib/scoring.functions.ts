@@ -3,9 +3,16 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 /**
- * AI Scoring Engine — port of rutuvideo.ipynb 3-axis reasoning layer.
- * Founder / Market / Idea-vs-market are scored SEPARATELY and never averaged.
- * Every prediction returns evidence + explanation + confidence.
+ * AI Scoring Engine — 8-layer Founder Scorecard.
+ *
+ * Weighted composite:
+ *   Founder 40  (Identity/Background 15 + Execution 15 + Team 10, Traits modifier)
+ *   Market  30
+ *   Idea    20
+ *   Trust   10  (claim-level quality; also acts as a gate: <70 => flagged)
+ *
+ * Axes are scored SEPARATELY and never averaged blindly — composite is the
+ * weighted sum, and Trust <70 pins `gate_passed=false` regardless.
  */
 
 const FounderSnapshot = z.object({
@@ -29,7 +36,6 @@ const AnalyzeInput = z.object({
 const GetInput = z.object({ founder_key: z.string().min(1) });
 
 type AxisResult = {
-  axis: "founder" | "market" | "idea";
   score: number;
   confidence: number;
   strengths: string[];
@@ -38,41 +44,109 @@ type AxisResult = {
   reason: string;
 };
 
+type FounderAxisResult = AxisResult & {
+  slices: {
+    identity_background: { value: number; reason: string };
+    execution_signals: { value: number; reason: string };
+    traits: { value: number; reason: string };
+    team_structure: { value: number; reason: string };
+  };
+};
+
+type TrustAxisResult = AxisResult & {
+  gate_passed: boolean;
+  gaps_disclosed: string[];
+  contradictions: string[];
+};
+
 type AnalysisResult = {
-  founder_axis: AxisResult;
+  sourcing_route: "social" | "non_social" | "mixed";
+  founder_axis: FounderAxisResult;
   market_axis: AxisResult;
   idea_axis: AxisResult;
+  trust_axis: TrustAxisResult;
   composite: {
     total: number;
+    weights: { founder: 0.4; market: 0.3; idea: 0.2; trust: 0.1 };
     reason: string;
     components: Record<string, { value: number; reason: string }>;
   };
-  trust_notes: string;
-  claims: { claim: string; source: string; confidence: number; verified: string }[];
+  claims: {
+    claim: string;
+    source: string;
+    source_type: "first_party" | "third_party" | "self_reported";
+    confidence: number;
+    verified: "Verified" | "Needs Verification" | "Unverified";
+  }[];
 };
 
-const SYSTEM_PROMPT = `You are the reasoning layer of VC Brain. Score three axes SEPARATELY — Founder, Market & traction, Idea-vs-market — NEVER averaged into one number. Every claim you cite carries an evidence_state (verified, self_asserted, contradicted, gap_flagged, unobserved) and a confidence — weight contradicted and low-trust claims accordingly and flag them explicitly. Never invent a fact for a gap; call it "Not disclosed" instead.
+const SYSTEM_PROMPT = `You are the reasoning layer of VC Brain. Produce an 8-layer Founder Scorecard.
+
+AXES (score each SEPARATELY 0-100, never blend into one hidden number):
+ - Founder axis (weight 40) — composed of four sub-slices:
+     identity_background (weight 15 of overall): prior roles, exits, domain fit, education, public footprint.
+     execution_signals   (weight 15 of overall): shipped products, OSS/repos, velocity, hiring, external validation.
+     team_structure      (weight 10 of overall): co-founder complementarity, cap table sanity, early hires, red flags.
+     traits (modifier): resilience, integrity, clarity, coachability — derived from tone/consistency of written+public content and any interview memory.
+ - Market axis (weight 30): problem clarity, TAM/SAM/SOM, traction/KPIs, unit economics, competition/SWOT.
+ - Idea-vs-market axis (weight 20): USP, defensibility, moats, fit with buyer behaviour/timing/regulation, expansion paths.
+ - Trust axis (weight 10): claim-level data quality. For each important claim assess source_type (first_party | third_party | self_reported), cross-channel consistency, and confidence. Trust score MUST reflect verification coverage. Set gate_passed=true only if trust score >= 70.
+
+SOURCING ROUTE: decide "social" (LinkedIn/X/GitHub/Substack/podcasts present), "non_social" (only website/press/patents/filings), or "mixed".
+
+RULES:
+ - Never invent facts for gaps — call them "Not disclosed" and list them under trust_axis.gaps_disclosed.
+ - Penalise hidden gaps, not honestly disclosed ones.
+ - Weight self_reported/contradicted claims down and flag them in trust_axis.contradictions.
+ - Cite specific evidence for every strength and weakness ("GitHub: 4.2k stars on repo X", "Website: claims 20 paying customers, unverified").
+ - Composite total = round(0.4*founder + 0.3*market + 0.2*idea + 0.1*trust).
 
 Return ONLY valid JSON matching this exact schema:
 {
-  "founder_axis": { "score": 0-100, "confidence": 0-100, "strengths": ["..."], "weaknesses": ["..."], "evidence": ["source: fact"], "reason": "one paragraph explaining WHY this score" },
-  "market_axis": { "score": 0-100, "confidence": 0-100, "strengths": [], "weaknesses": [], "evidence": [], "reason": "" },
-  "idea_axis":   { "score": 0-100, "confidence": 0-100, "strengths": [], "weaknesses": [], "evidence": [], "reason": "" },
-  "composite": {
-    "total": 0-100,
-    "reason": "one paragraph explaining the weighted composite score and the primary drivers",
-    "components": {
-      "technical":    {"value": 0-100, "reason": "..."},
-      "execution":    {"value": 0-100, "reason": "..."},
-      "research":     {"value": 0-100, "reason": "..."},
-      "leadership":   {"value": 0-100, "reason": "..."},
-      "communication":{"value": 0-100, "reason": "..."},
-      "coachability": {"value": 0-100, "reason": "..."},
-      "market_fit":   {"value": 0-100, "reason": "..."}
+  "sourcing_route": "social|non_social|mixed",
+  "founder_axis": {
+    "score": 0-100, "confidence": 0-100,
+    "strengths": ["..."], "weaknesses": ["..."], "evidence": ["source: fact"],
+    "reason": "one paragraph explaining WHY this axis score",
+    "slices": {
+      "identity_background": {"value": 0-100, "reason": "..."},
+      "execution_signals":   {"value": 0-100, "reason": "..."},
+      "traits":              {"value": 0-100, "reason": "..."},
+      "team_structure":      {"value": 0-100, "reason": "..."}
     }
   },
-  "trust_notes": "contradictions or gaps that affect confidence",
-  "claims": [ { "claim": "...", "source": "GitHub|Scholar|Website|Interview|News|Memory", "confidence": 0-100, "verified": "Verified|Needs Verification|Unverified" } ]
+  "market_axis": { "score": 0-100, "confidence": 0-100, "strengths": [], "weaknesses": [], "evidence": [], "reason": "" },
+  "idea_axis":   { "score": 0-100, "confidence": 0-100, "strengths": [], "weaknesses": [], "evidence": [], "reason": "" },
+  "trust_axis": {
+    "score": 0-100, "confidence": 0-100,
+    "strengths": [], "weaknesses": [], "evidence": [], "reason": "",
+    "gate_passed": true,
+    "gaps_disclosed": ["..."],
+    "contradictions": ["..."]
+  },
+  "composite": {
+    "total": 0-100,
+    "weights": { "founder": 0.4, "market": 0.3, "idea": 0.2, "trust": 0.1 },
+    "reason": "one paragraph explaining the weighted composite and the primary drivers",
+    "components": {
+      "identity_background": {"value": 0-100, "reason": "..."},
+      "execution_signals":   {"value": 0-100, "reason": "..."},
+      "team_structure":      {"value": 0-100, "reason": "..."},
+      "traits":              {"value": 0-100, "reason": "..."},
+      "market":              {"value": 0-100, "reason": "..."},
+      "idea_usp":            {"value": 0-100, "reason": "..."},
+      "trust":               {"value": 0-100, "reason": "..."}
+    }
+  },
+  "claims": [
+    {
+      "claim": "...",
+      "source": "GitHub|Scholar|Website|Interview|News|Memory|LinkedIn|Filing|Patent",
+      "source_type": "first_party|third_party|self_reported",
+      "confidence": 0-100,
+      "verified": "Verified|Needs Verification|Unverified"
+    }
+  ]
 }`;
 
 async function callGateway(apiKey: string, userPrompt: string): Promise<AnalysisResult> {
@@ -114,7 +188,6 @@ export const analyzeFounder = createServerFn({ method: "POST" })
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
 
-    // Assemble the founder record — like get_founder_record() in the notebook.
     const [memoryRes, claimsRes] = await Promise.all([
       context.supabase
         .from("founder_memory")
@@ -135,41 +208,66 @@ export const analyzeFounder = createServerFn({ method: "POST" })
       existing_claims: claimsRes.data ?? [],
     };
 
-    const userPrompt = `Founder record:\n${JSON.stringify(record, null, 2)}\n\nAnalyze and score the three axes independently. Cite specific evidence for every claim. Flag gaps explicitly.`;
+    const userPrompt = `Founder record:\n${JSON.stringify(record, null, 2)}\n\nProduce the 8-layer scorecard. Score every axis independently, cite evidence for every strength/weakness, and enforce the trust gate.`;
     const result = await callGateway(apiKey, userPrompt);
 
-    // Persist — 3 opportunity_scores rows (one per panel), composite founder_scores, new claims.
+    // Recompute composite deterministically so we can trust it downstream.
+    const founder = clamp(result.founder_axis?.score);
+    const market = clamp(result.market_axis?.score);
+    const idea = clamp(result.idea_axis?.score);
+    const trust = clamp(result.trust_axis?.score);
+    const compositeTotal = Math.round(0.4 * founder + 0.3 * market + 0.2 * idea + 0.1 * trust);
+    result.composite = {
+      ...result.composite,
+      total: compositeTotal,
+      weights: { founder: 0.4, market: 0.3, idea: 0.2, trust: 0.1 },
+    };
+    if (result.trust_axis) result.trust_axis.gate_passed = trust >= 70;
+
+    // Persist — one opportunity_scores row per axis (founder/market/idea/trust).
     const axes: [string, AxisResult][] = [
       ["founder", result.founder_axis],
       ["market", result.market_axis],
       ["idea", result.idea_axis],
+      ["trust", result.trust_axis],
     ];
 
-    const opportunityRows = axes.map(([panel, a]) => ({
-      user_id: context.userId,
-      founder_key: data.founder_key,
-      panel,
-      score: clamp(a.score),
-      confidence: clamp(a.confidence),
-      strengths: a.strengths ?? [],
-      weaknesses: a.weaknesses ?? [],
-      evidence: a.evidence ?? [],
-      reason: a.reason ?? "",
-    }));
+    const opportunityRows = axes
+      .filter(([, a]) => !!a)
+      .map(([panel, a]) => ({
+        user_id: context.userId,
+        founder_key: data.founder_key,
+        panel,
+        score: clamp(a.score),
+        confidence: clamp(a.confidence),
+        strengths: a.strengths ?? [],
+        weaknesses: a.weaknesses ?? [],
+        evidence: a.evidence ?? [],
+        reason: a.reason ?? "",
+      }));
 
     await context.supabase.from("opportunity_scores").insert(opportunityRows);
 
     await context.supabase.from("founder_scores").insert({
       user_id: context.userId,
       founder_key: data.founder_key,
-      total: clamp(result.composite.total),
-      components: result.composite.components as never,
+      total: compositeTotal,
+      components: {
+        ...(result.composite.components ?? {}),
+        _slices: result.founder_axis?.slices,
+        _trust: {
+          gate_passed: result.trust_axis?.gate_passed,
+          gaps_disclosed: result.trust_axis?.gaps_disclosed ?? [],
+          contradictions: result.trust_axis?.contradictions ?? [],
+        },
+        _sourcing_route: result.sourcing_route,
+      } as never,
       reason: result.composite.reason,
     });
 
     if (result.claims?.length) {
       await context.supabase.from("claims").insert(
-        result.claims.slice(0, 20).map((c) => ({
+        result.claims.slice(0, 24).map((c) => ({
           user_id: context.userId,
           founder_key: data.founder_key,
           claim: c.claim,
@@ -186,10 +284,13 @@ export const analyzeFounder = createServerFn({ method: "POST" })
       founder_key: data.founder_key,
       kind: "ai.analysis",
       meta: {
-        total: result.composite.total,
-        founder: result.founder_axis.score,
-        market: result.market_axis.score,
-        idea: result.idea_axis.score,
+        total: compositeTotal,
+        founder,
+        market,
+        idea,
+        trust,
+        gate_passed: result.trust_axis?.gate_passed ?? false,
+        sourcing_route: result.sourcing_route,
       },
     });
 
@@ -206,7 +307,7 @@ export const getLatestAnalysis = createServerFn({ method: "POST" })
         .select("panel, score, confidence, strengths, weaknesses, evidence, reason, created_at")
         .eq("founder_key", data.founder_key)
         .order("created_at", { ascending: false })
-        .limit(30),
+        .limit(40),
       context.supabase
         .from("founder_scores")
         .select("total, components, reason, created_at")
@@ -216,7 +317,6 @@ export const getLatestAnalysis = createServerFn({ method: "POST" })
         .maybeSingle(),
     ]);
 
-    // Take latest per panel.
     const latestByPanel = new Map<string, NonNullable<typeof opp.data>[number]>();
     for (const row of opp.data ?? []) {
       if (!latestByPanel.has(row.panel)) latestByPanel.set(row.panel, row);
@@ -228,6 +328,7 @@ export const getLatestAnalysis = createServerFn({ method: "POST" })
         founder: latestByPanel.get("founder") ?? null,
         market: latestByPanel.get("market") ?? null,
         idea: latestByPanel.get("idea") ?? null,
+        trust: latestByPanel.get("trust") ?? null,
       },
     };
   });
