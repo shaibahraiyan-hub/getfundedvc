@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, ArrowUpRight } from "lucide-react";
+import { MapPin, ArrowUpRight, Github } from "lucide-react";
 import type { Founder } from "@/features/founders/data";
 import { cn } from "@/lib/utils";
 
@@ -48,13 +48,26 @@ export function FounderCard({ founder }: { founder: Founder }) {
         <div className="text-[11px] text-muted-foreground">
           Confidence <span className="font-medium text-foreground">{founder.confidence}%</span>
         </div>
-        <Link
-          to="/founders/$id"
-          params={{ id: founder.id }}
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:opacity-80"
-        >
-          Open workspace <ArrowUpRight className="h-3.5 w-3.5" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <a
+            href={`https://github.com/search?q=${encodeURIComponent(founder.name)}&type=users`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={`Find ${founder.name} on GitHub`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Github className="h-3.5 w-3.5" />
+            GitHub
+          </a>
+          <Link
+            to="/founders/$id"
+            params={{ id: founder.id }}
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:opacity-80"
+          >
+            Open workspace <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
     </div>
   );
