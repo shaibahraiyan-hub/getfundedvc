@@ -238,7 +238,7 @@ export const founders: Founder[] = [
     country: "United Kingdom",
     industry: "Robotics",
     stage: "Discovery",
-    function: "",
+    
     website: "solstice-robotics.com",
     email: "james@solstice-robotics.com",
     linkedin: "linkedin.com/in/jamesokafor",
