@@ -205,7 +205,7 @@ function Row({ k, v }: { k: string; v: string }) {
 
 function ResearchTab({ founder }: { founder: Founder }) {
   const r = founder.research;
-  const { data: live, isFetching, error, refetch } = useQuery({
+  const { data: live, isFetching, error, refetch } = useQuery<EnrichResult>({
     queryKey: ["enrich", founder.id, founder.name],
     queryFn: async () => {
       let handles: { githubHandle?: string; scholarId?: string } = {};
