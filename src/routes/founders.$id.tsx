@@ -391,3 +391,243 @@ function TimelineTab({ founder }: { founder: Founder }) {
     </div>
   );
 }
+
+// ================= Memory Tab =================
+
+const MEMORY_CATEGORIES: MemoryCategory[] = [
+  "Background", "Skill", "Motivation", "Risk", "Network", "Preference", "Milestone", "Signal",
+];
+
+const MEMORY_SOURCES: MemorySource[] = [
+  "Interview", "Research", "Evidence", "Email", "Manual", "Memo", "Meeting",
+];
+
+const CATEGORY_STYLE: Record<MemoryCategory, string> = {
+  Background: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  Skill: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  Motivation: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  Risk: "bg-red-500/10 text-red-600 border-red-500/20",
+  Network: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20",
+  Preference: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  Milestone: "bg-primary/10 text-primary border-primary/20",
+  Signal: "bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/20",
+};
+
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function MemoryTab({ founder }: { founder: Founder }) {
+  const [entries, setEntries] = useState<MemoryEntry[]>(() => getFounderMemory(founder.id));
+  const [filter, setFilter] = useState<MemoryCategory | "All">("All");
+  const [search, setSearch] = useState("");
+  const [draft, setDraft] = useState("");
+  const [draftCategory, setDraftCategory] = useState<MemoryCategory>("Signal");
+  const [draftSource, setDraftSource] = useState<MemorySource>("Manual");
+
+  const filtered = useMemo(() => {
+    return entries
+      .filter((e) => (filter === "All" ? true : e.category === filter))
+      .filter((e) => (search ? e.content.toLowerCase().includes(search.toLowerCase()) : true))
+      .sort((a, b) => (Number(!!b.pinned) - Number(!!a.pinned)) || (b.createdAt.localeCompare(a.createdAt)));
+  }, [entries, filter, search]);
+
+  const stats = useMemo(() => {
+    const total = entries.length;
+    const pinned = entries.filter((e) => e.pinned).length;
+    const avgConfidence = Math.round(entries.reduce((s, e) => s + e.confidence, 0) / Math.max(1, total));
+    const risks = entries.filter((e) => e.category === "Risk").length;
+    return { total, pinned, avgConfidence, risks };
+  }, [entries]);
+
+  const handleAdd = () => {
+    if (!draft.trim()) return;
+    const created = addFounderMemory(founder.id, {
+      category: draftCategory,
+      content: draft.trim(),
+      source: draftSource,
+      sourceRef: "Manual entry",
+      confidence: 80,
+    });
+    setEntries((prev) => [created, ...prev]);
+    setDraft("");
+  };
+
+  const togglePin = (id: string) => {
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, pinned: !e.pinned } : e)));
+  };
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="space-y-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="grid h-8 w-8 place-items-center rounded-md bg-primary/10 text-primary">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold">Add to founder memory</div>
+              <div className="text-xs text-muted-foreground">
+                Anything captured here is retrieved during scoring, screening, and interviews.
+              </div>
+            </div>
+          </div>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={`What did you just learn about ${founder.name}?`}
+            className="min-h-[80px] w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <select
+              value={draftCategory}
+              onChange={(e) => setDraftCategory(e.target.value as MemoryCategory)}
+              className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+            >
+              {MEMORY_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select
+              value={draftSource}
+              onChange={(e) => setDraftSource(e.target.value as MemorySource)}
+              className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+            >
+              {MEMORY_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <button
+              onClick={handleAdd}
+              disabled={!draft.trim()}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-40"
+            >
+              <Plus className="h-3.5 w-3.5" /> Save memory
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1.5 text-xs text-muted-foreground">
+            <Filter className="h-3.5 w-3.5" /> Filter
+          </div>
+          <button
+            onClick={() => setFilter("All")}
+            className={cn(
+              "rounded-md border px-2 py-1 text-xs",
+              filter === "All" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
+            )}
+          >
+            All · {entries.length}
+          </button>
+          {MEMORY_CATEGORIES.map((c) => {
+            const n = entries.filter((e) => e.category === c).length;
+            if (!n) return null;
+            return (
+              <button
+                key={c}
+                onClick={() => setFilter(c)}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-xs",
+                  filter === c ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {c} · {n}
+              </button>
+            );
+          })}
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search memory…"
+            className="ml-auto w-48 rounded-md border border-border bg-card px-2 py-1.5 text-xs outline-none focus:border-primary"
+          />
+        </div>
+
+        <div className="space-y-2">
+          {filtered.length === 0 && (
+            <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              No memories match this filter yet.
+            </div>
+          )}
+          {filtered.map((entry) => (
+            <div key={entry.id} className="group rounded-lg border border-border bg-card p-4">
+              <div className="flex items-start gap-3">
+                <div className={cn("mt-0.5 shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide", CATEGORY_STYLE[entry.category])}>
+                  {entry.category}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm text-foreground">{entry.content}</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Brain className="h-3 w-3" /> {entry.source}{entry.sourceRef ? ` · ${entry.sourceRef}` : ""}</span>
+                    <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {fmtDate(entry.createdAt)}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                        <span className="block h-full bg-primary" style={{ width: `${entry.confidence}%` }} />
+                      </span>
+                      {entry.confidence}% confidence
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => togglePin(entry.id)}
+                  className={cn(
+                    "shrink-0 rounded-md p-1.5 text-muted-foreground opacity-0 transition group-hover:opacity-100",
+                    entry.pinned && "text-primary opacity-100",
+                  )}
+                  aria-label={entry.pinned ? "Unpin" : "Pin"}
+                >
+                  <Pin className={cn("h-3.5 w-3.5", entry.pinned && "fill-current")} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <aside className="space-y-3">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Memory index</div>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Stat label="Entries" value={stats.total} />
+            <Stat label="Pinned" value={stats.pinned} />
+            <Stat label="Avg confidence" value={`${stats.avgConfidence}%`} />
+            <Stat label="Risk flags" value={stats.risks} />
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+            <Sparkles className="h-3.5 w-3.5" /> AI synthesis
+          </div>
+          <p className="mt-2 text-sm text-foreground/90">
+            {founder.name} shows strong signal on domain depth and execution velocity. The dominant risk pattern is first-time-CEO GTM. Recommend probing pricing conviction and hiring plan in the next interview.
+          </p>
+          <div className="mt-3 text-[11px] text-muted-foreground">
+            Synthesized from {stats.total} memory entries · updated {fmtDate(new Date().toISOString())}
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Sources</div>
+          <div className="mt-3 space-y-1.5 text-xs">
+            {MEMORY_SOURCES.map((s) => {
+              const n = entries.filter((e) => e.source === s).length;
+              if (!n) return null;
+              return (
+                <div key={s} className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{s}</span>
+                  <span className="font-medium text-foreground">{n}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border border-border bg-background p-3">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
