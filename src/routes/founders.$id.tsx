@@ -74,12 +74,14 @@ function FounderWorkspace() {
 
       <div className="mt-6">
         {tab === "Overview" && <OverviewTab founder={founder} />}
+        {tab === "Memory" && <MemoryTab founder={founder} />}
         {tab === "Research" && <ResearchTab founder={founder} />}
         {tab === "Evidence" && <EvidenceTab founder={founder} />}
         {tab === "Interview" && <InterviewTab founder={founder} />}
         {tab === "Investment Memo" && <MemoTab founder={founder} />}
         {tab === "Timeline" && <TimelineTab founder={founder} />}
       </div>
+
     </div>
   );
 }
