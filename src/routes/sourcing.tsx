@@ -232,6 +232,116 @@ function Sourcing() {
           </div>
         ))}
       </div>
+
+      {(discover.data || discover.isPending || discover.error) && (
+        <div className="mt-8">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold tracking-tight">
+              <Github className="mr-1.5 inline h-3.5 w-3.5" />
+              Discovered on GitHub
+              {discover.data && (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  · {discover.data.founders.length} new profiles
+                </span>
+              )}
+            </h2>
+            {discover.data && (
+              <div className="max-w-md truncate text-[10px] text-muted-foreground" title={discover.data.query}>
+                query: <span className="font-mono">{discover.data.query}</span>
+              </div>
+            )}
+          </div>
+
+          {discover.error && (
+            <div className="mt-3 rounded-md border border-rose-500/30 bg-rose-500/5 p-3 text-xs text-rose-700">
+              GitHub search failed: {String((discover.error as Error).message)}
+            </div>
+          )}
+
+          {discover.isPending && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Searching real GitHub profiles matching your thesis…
+            </div>
+          )}
+
+          {discover.data && (
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {discover.data.founders.map((d) => <DiscoveredCard key={d.id} f={d} />)}
+              {discover.data.founders.length === 0 && (
+                <div className="col-span-full rounded-md border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+                  No GitHub matches — try loosening filters or a broader query.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DiscoveredCard({ f }: { f: DiscoveredFounder }) {
+  const initials = f.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  return (
+    <div className="flex flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/30">
+      <div className="flex items-start gap-3">
+        {f.avatarUrl ? (
+          <img src={f.avatarUrl} alt={f.name} className="h-11 w-11 shrink-0 rounded-full object-cover" />
+        ) : (
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-primary">{initials}</div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="truncate text-sm font-semibold text-foreground">{f.name}</div>
+            <span className="shrink-0 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Discovered</span>
+          </div>
+          <div className="truncate text-xs text-muted-foreground">
+            @{f.login}{f.company ? ` · ${f.company}` : ""}
+          </div>
+          {f.location && (
+            <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+              <MapPin className="h-3 w-3" /> {f.location}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {f.bio && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{f.bio}</p>}
+
+      <div className="mt-2 grid grid-cols-2 gap-1.5 text-[10px]">
+        <div className="rounded border border-border bg-surface px-2 py-1">
+          <div className="flex items-center gap-1 text-muted-foreground"><Users className="h-2.5 w-2.5" /> Followers</div>
+          <div className="mt-0.5 font-semibold tabular-nums text-foreground">{f.followers.toLocaleString()}</div>
+        </div>
+        <div className="rounded border border-border bg-surface px-2 py-1">
+          <div className="flex items-center gap-1 text-muted-foreground"><FileText className="h-2.5 w-2.5" /> Repos</div>
+          <div className="mt-0.5 font-semibold tabular-nums text-foreground">{f.publicRepos}</div>
+        </div>
+      </div>
+
+      {f.topRepo && (
+        <a href={f.topRepo.url} target="_blank" rel="noreferrer"
+          className="mt-2 block rounded-md border border-border bg-surface p-2 hover:border-primary/40">
+          <div className="flex items-center justify-between text-[11px] font-semibold">
+            <span className="truncate">{f.topRepo.name}</span>
+            <span className="shrink-0 text-muted-foreground"><Star className="mr-0.5 inline h-2.5 w-2.5" />{f.topRepo.stars.toLocaleString()}</span>
+          </div>
+          {f.topRepo.description && <div className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground">{f.topRepo.description}</div>}
+        </a>
+      )}
+
+      <div className="mt-2 flex gap-1.5">
+        <a href={f.htmlUrl} target="_blank" rel="noreferrer"
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-border bg-surface py-1.5 text-[10px] font-semibold hover:border-primary/40">
+          <Github className="h-3 w-3" /> Profile <ExternalLink className="h-2.5 w-2.5" />
+        </a>
+        {f.blog && (
+          <a href={f.blog.startsWith("http") ? f.blog : `https://${f.blog}`} target="_blank" rel="noreferrer"
+            className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-border bg-surface py-1.5 text-[10px] font-semibold hover:border-primary/40">
+            Site <ExternalLink className="h-2.5 w-2.5" />
+          </a>
+        )}
+      </div>
     </div>
   );
 }
