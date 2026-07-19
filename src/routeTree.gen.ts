@@ -10,18 +10,55 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SourcingRouteImport } from './routes/sourcing'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ScreeningRouteImport } from './routes/screening'
+import { Route as InterviewRouteImport } from './routes/interview'
 import { Route as FoundersRouteImport } from './routes/founders'
+import { Route as DiligenceRouteImport } from './routes/diligence'
+import { Route as CommitteeRouteImport } from './routes/committee'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FoundersIndexRouteImport } from './routes/founders.index'
+import { Route as FoundersIdRouteImport } from './routes/founders.$id'
 
 const SourcingRoute = SourcingRouteImport.update({
   id: '/sourcing',
   path: '/sourcing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScreeningRoute = ScreeningRouteImport.update({
+  id: '/screening',
+  path: '/screening',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InterviewRoute = InterviewRouteImport.update({
+  id: '/interview',
+  path: '/interview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FoundersRoute = FoundersRouteImport.update({
   id: '/founders',
   path: '/founders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiligenceRoute = DiligenceRouteImport.update({
+  id: '/diligence',
+  path: '/diligence',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommitteeRoute = CommitteeRouteImport.update({
+  id: '/committee',
+  path: '/committee',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,36 +71,101 @@ const FoundersIndexRoute = FoundersIndexRouteImport.update({
   path: '/',
   getParentRoute: () => FoundersRoute,
 } as any)
+const FoundersIdRoute = FoundersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => FoundersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/committee': typeof CommitteeRoute
+  '/diligence': typeof DiligenceRoute
   '/founders': typeof FoundersRouteWithChildren
+  '/interview': typeof InterviewRoute
+  '/screening': typeof ScreeningRoute
+  '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sourcing': typeof SourcingRoute
+  '/founders/$id': typeof FoundersIdRoute
   '/founders/': typeof FoundersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/committee': typeof CommitteeRoute
+  '/diligence': typeof DiligenceRoute
+  '/interview': typeof InterviewRoute
+  '/screening': typeof ScreeningRoute
+  '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sourcing': typeof SourcingRoute
+  '/founders/$id': typeof FoundersIdRoute
   '/founders': typeof FoundersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/committee': typeof CommitteeRoute
+  '/diligence': typeof DiligenceRoute
   '/founders': typeof FoundersRouteWithChildren
+  '/interview': typeof InterviewRoute
+  '/screening': typeof ScreeningRoute
+  '/settings': typeof SettingsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sourcing': typeof SourcingRoute
+  '/founders/$id': typeof FoundersIdRoute
   '/founders/': typeof FoundersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/founders' | '/sourcing' | '/founders/'
+  fullPaths:
+    | '/'
+    | '/committee'
+    | '/diligence'
+    | '/founders'
+    | '/interview'
+    | '/screening'
+    | '/settings'
+    | '/sitemap.xml'
+    | '/sourcing'
+    | '/founders/$id'
+    | '/founders/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sourcing' | '/founders'
-  id: '__root__' | '/' | '/founders' | '/sourcing' | '/founders/'
+  to:
+    | '/'
+    | '/committee'
+    | '/diligence'
+    | '/interview'
+    | '/screening'
+    | '/settings'
+    | '/sitemap.xml'
+    | '/sourcing'
+    | '/founders/$id'
+    | '/founders'
+  id:
+    | '__root__'
+    | '/'
+    | '/committee'
+    | '/diligence'
+    | '/founders'
+    | '/interview'
+    | '/screening'
+    | '/settings'
+    | '/sitemap.xml'
+    | '/sourcing'
+    | '/founders/$id'
+    | '/founders/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CommitteeRoute: typeof CommitteeRoute
+  DiligenceRoute: typeof DiligenceRoute
   FoundersRoute: typeof FoundersRouteWithChildren
+  InterviewRoute: typeof InterviewRoute
+  ScreeningRoute: typeof ScreeningRoute
+  SettingsRoute: typeof SettingsRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SourcingRoute: typeof SourcingRoute
 }
 
@@ -76,11 +178,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/screening': {
+      id: '/screening'
+      path: '/screening'
+      fullPath: '/screening'
+      preLoaderRoute: typeof ScreeningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/interview': {
+      id: '/interview'
+      path: '/interview'
+      fullPath: '/interview'
+      preLoaderRoute: typeof InterviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/founders': {
       id: '/founders'
       path: '/founders'
       fullPath: '/founders'
       preLoaderRoute: typeof FoundersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diligence': {
+      id: '/diligence'
+      path: '/diligence'
+      fullPath: '/diligence'
+      preLoaderRoute: typeof DiligenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/committee': {
+      id: '/committee'
+      path: '/committee'
+      fullPath: '/committee'
+      preLoaderRoute: typeof CommitteeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -97,14 +241,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FoundersIndexRouteImport
       parentRoute: typeof FoundersRoute
     }
+    '/founders/$id': {
+      id: '/founders/$id'
+      path: '/$id'
+      fullPath: '/founders/$id'
+      preLoaderRoute: typeof FoundersIdRouteImport
+      parentRoute: typeof FoundersRoute
+    }
   }
 }
 
 interface FoundersRouteChildren {
+  FoundersIdRoute: typeof FoundersIdRoute
   FoundersIndexRoute: typeof FoundersIndexRoute
 }
 
 const FoundersRouteChildren: FoundersRouteChildren = {
+  FoundersIdRoute: FoundersIdRoute,
   FoundersIndexRoute: FoundersIndexRoute,
 }
 
@@ -114,7 +267,13 @@ const FoundersRouteWithChildren = FoundersRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CommitteeRoute: CommitteeRoute,
+  DiligenceRoute: DiligenceRoute,
   FoundersRoute: FoundersRouteWithChildren,
+  InterviewRoute: InterviewRoute,
+  ScreeningRoute: ScreeningRoute,
+  SettingsRoute: SettingsRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SourcingRoute: SourcingRoute,
 }
 export const routeTree = rootRouteImport
