@@ -74,6 +74,12 @@ function Sourcing() {
   const [editing, setEditing] = useState<string | null>(null);
 
   const enrichFn = useServerFn(enrichFounder);
+  const discoverFn = useServerFn(discoverFoundersOnGitHub);
+
+  const discover = useMutation({
+    mutationFn: (vars: { query: string; industries: string[]; countries: string[] }) =>
+      discoverFn({ data: { query: vars.query, industries: vars.industries, countries: vars.countries, limit: 24 } }),
+  });
 
   useEffect(() => { setHandles(loadHandles()); }, []);
 
