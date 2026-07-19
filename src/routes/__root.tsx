@@ -147,6 +147,7 @@ function RootComponent() {
           </div>
         </SidebarProvider>
       </AuthGate>
+      <Toaster />
     </QueryClientProvider>
   );
 }
