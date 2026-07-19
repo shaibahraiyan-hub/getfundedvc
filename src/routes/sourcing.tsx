@@ -335,6 +335,10 @@ function DiscoveredCard({ f }: { f: DiscoveredFounder }) {
           className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-border bg-surface py-1.5 text-[10px] font-semibold hover:border-primary/40">
           <Github className="h-3 w-3" /> Profile <ExternalLink className="h-2.5 w-2.5" />
         </a>
+        <a href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(f.name + (f.company ? " " + f.company : ""))}`} target="_blank" rel="noreferrer"
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-border bg-surface py-1.5 text-[10px] font-semibold hover:border-primary/40">
+          <Linkedin className="h-3 w-3" /> LinkedIn <ExternalLink className="h-2.5 w-2.5" />
+        </a>
         {f.blog && (
           <a href={f.blog.startsWith("http") ? f.blog : `https://${f.blog}`} target="_blank" rel="noreferrer"
             className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-border bg-surface py-1.5 text-[10px] font-semibold hover:border-primary/40">
