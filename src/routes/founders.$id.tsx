@@ -154,46 +154,219 @@ function OverviewTab({ founder }: { founder: Founder }) {
   }));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-      <div className="rounded-xl border border-border bg-card p-5">
-        <div className="text-sm font-semibold tracking-tight">Founder profile radar</div>
-        <div className="mt-3 h-[340px]">
-          <ResponsiveContainer>
-            <RadarChart data={data}>
-              <PolarGrid stroke="var(--border)" />
-              <PolarAngleAxis dataKey="dim" tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-              <Radar
-                dataKey="value"
-                stroke="var(--primary)"
-                fill="var(--primary)"
-                fillOpacity={0.25}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      <div className="space-y-4">
+    <div className="space-y-4">
+      <AIAnalysisCard founder={founder} />
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
         <div className="rounded-xl border border-border bg-card p-5">
-          <div className="text-sm font-semibold tracking-tight">Recommendation</div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-semibold text-primary">{founder.recommendation}</span>
-            <span className="text-xs text-muted-foreground">{founder.confidence}% confidence</span>
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Every recommendation is backed by evidence collected across {founder.claims.length} verified claims. See the Evidence tab for provenance.
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="text-sm font-semibold tracking-tight">Investment thesis fit</div>
-          <div className="mt-3 space-y-2 text-sm">
-            <Row k="Industry" v={founder.industry} />
-            <Row k="Stage" v={founder.stage} />
-            <Row k="Geography" v={founder.country} />
-            <Row k="Accelerator" v={founder.research.accelerator ?? "None"} />
+          <div className="text-sm font-semibold tracking-tight">Founder profile radar</div>
+          <div className="mt-3 h-[340px]">
+            <ResponsiveContainer>
+              <RadarChart data={data}>
+                <PolarGrid stroke="var(--border)" />
+                <PolarAngleAxis dataKey="dim" tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                <Radar
+                  dataKey="value"
+                  stroke="var(--primary)"
+                  fill="var(--primary)"
+                  fillOpacity={0.25}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
           </div>
         </div>
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="text-sm font-semibold tracking-tight">Recommendation</div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-semibold text-primary">{founder.recommendation}</span>
+              <span className="text-xs text-muted-foreground">{founder.confidence}% confidence</span>
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Every recommendation is backed by evidence collected across {founder.claims.length} verified claims. See the Evidence tab for provenance.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="text-sm font-semibold tracking-tight">Investment thesis fit</div>
+            <div className="mt-3 space-y-2 text-sm">
+              <Row k="Industry" v={founder.industry} />
+              <Row k="Stage" v={founder.stage} />
+              <Row k="Geography" v={founder.country} />
+              <Row k="Accelerator" v={founder.research.accelerator ?? "None"} />
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function AIAnalysisCard({ founder }: { founder: Founder }) {
+  const qc = useQueryClient();
+  const analyzeFn = useServerFn(analyzeFounder);
+  const getFn = useServerFn(getLatestAnalysis);
+
+  const { data: latest, isLoading } = useQuery({
+    queryKey: ["analysis", founder.id],
+    queryFn: () => getFn({ data: { founder_key: founder.id } }),
+  });
+
+  const mut = useMutation({
+    mutationFn: () =>
+      analyzeFn({
+        data: {
+          founder_key: founder.id,
+          snapshot: {
+            id: founder.id,
+            name: founder.name,
+            company: founder.company,
+            role: founder.role,
+            industry: founder.industry,
+            stage: founder.stage,
+            country: founder.country,
+            bio: founder.bio,
+            research: founder.research as unknown as Record<string, unknown>,
+            radar: founder.radar as unknown as Record<string, number>,
+          },
+        },
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["analysis", founder.id] });
+      toast.success("AI analysis complete");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const hasResults = latest?.composite || latest?.axes.founder || latest?.axes.market || latest?.axes.idea;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <div>
+            <div className="text-sm font-semibold tracking-tight">AI Analysis</div>
+            <div className="text-xs text-muted-foreground">
+              GPT-5.4-mini · 3-axis scoring · never averaged
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => mut.mutate()}
+          disabled={mut.isPending}
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          {mut.isPending ? "Analyzing…" : hasResults ? "Re-analyze" : "Run AI Analysis"}
+        </button>
+      </div>
+
+      {isLoading && !hasResults && (
+        <div className="mt-4 text-xs text-muted-foreground">Loading previous analysis…</div>
+      )}
+
+      {!isLoading && !hasResults && !mut.isPending && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          No analysis yet. Click <span className="font-medium text-foreground">Run AI Analysis</span> to score this founder across
+          Founder, Market, and Idea-vs-market — with cited evidence and an explanation for every score.
+        </p>
+      )}
+
+      {hasResults && (
+        <div className="mt-4 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <AxisTile label="Founder" axis={latest?.axes.founder} />
+            <AxisTile label="Market" axis={latest?.axes.market} />
+            <AxisTile label="Idea vs Market" axis={latest?.axes.idea} />
+          </div>
+
+          {latest?.composite && (
+            <div className="rounded-lg border border-border bg-background/50 p-4">
+              <div className="flex items-baseline justify-between">
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Composite score
+                </div>
+                <div className="text-2xl font-semibold text-primary">
+                  {latest.composite.total}
+                  <span className="text-sm text-muted-foreground">/100</span>
+                </div>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-foreground">
+                {latest.composite.reason}
+              </p>
+              {latest.composite.components && (
+                <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
+                  {Object.entries(latest.composite.components as Record<string, { value: number; reason: string }>).map(
+                    ([k, v]) => (
+                      <div key={k} className="flex items-start gap-2 text-xs">
+                        <span className="mt-0.5 shrink-0 rounded bg-primary/10 px-1.5 py-0.5 font-mono font-semibold text-primary">
+                          {v.value}
+                        </span>
+                        <div>
+                          <span className="font-medium capitalize text-foreground">{k}</span>
+                          <span className="text-muted-foreground"> — {v.reason}</span>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AxisTile({
+  label,
+  axis,
+}: {
+  label: string;
+  axis:
+    | {
+        score: number;
+        confidence: number;
+        strengths: string[] | null;
+        weaknesses: string[] | null;
+        evidence: string[] | null;
+        reason: string | null;
+      }
+    | null
+    | undefined;
+}) {
+  if (!axis) {
+    return (
+      <div className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
+        {label}: not scored yet
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-border bg-background/50 p-3">
+      <div className="flex items-baseline justify-between">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+        <div className="text-lg font-semibold text-foreground">
+          {axis.score}
+          <span className="text-xs text-muted-foreground">/100</span>
+        </div>
+      </div>
+      <div className="mt-1 text-[11px] text-muted-foreground">Confidence {axis.confidence}%</div>
+      {axis.reason && <p className="mt-2 text-xs leading-relaxed text-foreground/90">{axis.reason}</p>}
+      {axis.evidence && axis.evidence.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {axis.evidence.slice(0, 4).map((e, i) => (
+            <span
+              key={i}
+              className="rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-muted-foreground"
+              title={e}
+            >
+              {e.length > 40 ? `${e.slice(0, 40)}…` : e}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
