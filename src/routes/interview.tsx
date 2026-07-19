@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { founders, type Founder } from "@/features/founders/data";
+import { founders as allFounders, type Founder } from "@/features/founders/data";
 import {
   Video, Mic, MicOff, Calendar, Clock, Sparkles, Play, Pause, Square,
   CheckCircle2, Circle, ChevronRight, FileText, Brain, Target, ShieldAlert,
   Lightbulb, Users, TrendingUp, Search, Download, Copy, Plus, MessageSquare,
-  Volume2, Radio, ListChecks, Wand2,
+  Volume2, Radio, ListChecks, Wand2, Github, Trophy,
 } from "lucide-react";
+
+const founders = [...allFounders].sort(
+  (a, b) => b.founderScore + b.opportunityScore - (a.founderScore + a.opportunityScore),
+);
 
 export const Route = createFileRoute("/interview")({
   head: () => ({
