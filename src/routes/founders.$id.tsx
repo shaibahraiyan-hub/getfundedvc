@@ -15,7 +15,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { addMemory, listMemory, togglePinMemory, deleteMemory } from "@/lib/memory.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { enrichFounder, type EnrichResult } from "@/lib/enrich.functions";
 
 
