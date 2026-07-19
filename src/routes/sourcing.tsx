@@ -139,17 +139,30 @@ function Sourcing() {
             Live signals from <span className="font-medium text-foreground">GitHub</span> and <span className="font-medium text-foreground">Semantic Scholar</span> — no auth, public data only.
           </p>
         </div>
-        <button
-          onClick={bulkEnrich}
-          disabled={bulkProgress !== null}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
-        >
-          {bulkProgress ? (
-            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Enriching {bulkProgress.done}/{bulkProgress.total}</>
-          ) : (
-            <><Sparkles className="h-3.5 w-3.5" /> Bulk enrich {results.length}</>
-          )}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => discover.mutate({ query: q, industries: Array.from(industry), countries: Array.from(country) })}
+            disabled={discover.isPending}
+            className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/15 disabled:opacity-60"
+          >
+            {discover.isPending ? (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching GitHub…</>
+            ) : (
+              <><Github className="h-3.5 w-3.5" /> Find new founders</>
+            )}
+          </button>
+          <button
+            onClick={bulkEnrich}
+            disabled={bulkProgress !== null}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+          >
+            {bulkProgress ? (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Enriching {bulkProgress.done}/{bulkProgress.total}</>
+            ) : (
+              <><Sparkles className="h-3.5 w-3.5" /> Bulk enrich {results.length}</>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="mt-5 rounded-xl border border-border bg-card p-4 sm:p-5">
