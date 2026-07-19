@@ -11,6 +11,7 @@ import {
   LogOut,
   Brain,
 } from "lucide-react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 import {
   Sidebar,
@@ -96,20 +97,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Elena Rodriguez" className="gap-2.5">
-              <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-                ER
-              </div>
-              {!collapsed && (
-                <div className="min-w-0 flex-1 text-left">
-                  <div className="truncate text-sm font-medium">Elena Rodriguez</div>
-                  <div className="truncate text-[11px] text-muted-foreground">
-                    General Partner
-                  </div>
-                </div>
-              )}
-            </SidebarMenuButton>
+          <CurrentUserMenuItem collapsed={collapsed} />
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="Log out">
