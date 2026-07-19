@@ -394,3 +394,73 @@ export function foundersByStage(): Record<Stage, Founder[]> {
 export function getFounder(id: string) {
   return founders.find((f) => f.id === id);
 }
+
+// ================= Founder Memory =================
+export type MemoryCategory =
+  | "Background"
+  | "Skill"
+  | "Motivation"
+  | "Risk"
+  | "Network"
+  | "Preference"
+  | "Milestone"
+  | "Signal";
+
+export type MemorySource =
+  | "Interview"
+  | "Research"
+  | "Evidence"
+  | "Email"
+  | "Manual"
+  | "Memo"
+  | "Meeting";
+
+export interface MemoryEntry {
+  id: string;
+  category: MemoryCategory;
+  content: string;
+  source: MemorySource;
+  sourceRef?: string;
+  confidence: number; // 0-100
+  createdAt: string; // ISO
+  pinned?: boolean;
+}
+
+const memoryStore: Record<string, MemoryEntry[]> = {
+  "aria-chen": [
+    { id: "m1", category: "Background", content: "MIT PhD in distributed systems; thesis on gradient sharding for LLM training clusters.", source: "Research", sourceRef: "Google Scholar", confidence: 98, createdAt: "2026-02-11T10:12:00Z", pinned: true },
+    { id: "m2", category: "Skill", content: "Deep systems expertise — shipped Anthropic's internal retrieval pipeline (10B+ vectors, p99 <30ms).", source: "Interview", sourceRef: "Intro call · Feb 14", confidence: 94, createdAt: "2026-02-14T17:04:00Z", pinned: true },
+    { id: "m3", category: "Motivation", content: "Left Anthropic because she wanted to own the retrieval layer end-to-end for enterprises.", source: "Interview", sourceRef: "Intro call · Feb 14", confidence: 88, createdAt: "2026-02-14T17:22:00Z" },
+    { id: "m4", category: "Network", content: "Warm intros available to Dario Amodei and Jared Kaplan; co-founder was tech lead on Claude eval infra.", source: "Email", sourceRef: "aria@vectorline.ai · Feb 20", confidence: 82, createdAt: "2026-02-20T09:41:00Z" },
+    { id: "m5", category: "Risk", content: "No prior founding experience — first-time CEO. Hiring GTM lead is the near-term unlock.", source: "Memo", sourceRef: "Draft memo v0.3", confidence: 76, createdAt: "2026-03-02T14:10:00Z" },
+    { id: "m6", category: "Milestone", content: "Signed 3 design partners (Ramp, Notion, Rippling) at $80k ARR each in the last 6 weeks.", source: "Evidence", sourceRef: "DocuSign PDFs", confidence: 96, createdAt: "2026-03-08T11:00:00Z", pinned: true },
+    { id: "m7", category: "Preference", content: "Prefers async decision-making; sends written updates every Friday.", source: "Meeting", sourceRef: "Weekly sync", confidence: 70, createdAt: "2026-03-12T16:30:00Z" },
+    { id: "m8", category: "Signal", content: "Coachability score improved after founder feedback session — implemented pricing changes within 48h.", source: "Manual", sourceRef: "Partner note", confidence: 84, createdAt: "2026-03-15T09:15:00Z" },
+  ],
+};
+
+const defaultMemory = (f: Founder): MemoryEntry[] => [
+  { id: `${f.id}-m1`, category: "Background", content: `${f.bio}`, source: "Research", sourceRef: "LinkedIn", confidence: 90, createdAt: "2026-02-05T09:00:00Z", pinned: true },
+  { id: `${f.id}-m2`, category: "Milestone", content: `Currently in ${f.stage.toLowerCase()} stage for ${f.company}.`, source: "Manual", sourceRef: "Pipeline", confidence: 100, createdAt: "2026-02-18T12:00:00Z" },
+  { id: `${f.id}-m3`, category: "Signal", content: `Founder score ${f.founderScore} · trust ${f.trustScore}. Recommendation: ${f.recommendation}.`, source: "Memo", sourceRef: "Auto-eval", confidence: 88, createdAt: "2026-02-25T15:30:00Z" },
+  { id: `${f.id}-m4`, category: "Skill", content: `Domain: ${f.industry}. Based in ${f.location}.`, source: "Research", sourceRef: "Web", confidence: 85, createdAt: "2026-03-01T10:00:00Z" },
+  { id: `${f.id}-m5`, category: "Risk", content: `Verify go-to-market motion and moat vs incumbents in ${f.industry}.`, source: "Manual", sourceRef: "Partner note", confidence: 65, createdAt: "2026-03-06T14:00:00Z" },
+];
+
+export function getFounderMemory(id: string): MemoryEntry[] {
+  const f = getFounder(id);
+  if (!f) return [];
+  return memoryStore[id] ?? defaultMemory(f);
+}
+
+export function addFounderMemory(id: string, entry: Omit<MemoryEntry, "id" | "createdAt">): MemoryEntry {
+  const created: MemoryEntry = {
+    ...entry,
+    id: `${id}-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+  };
+  const existing = memoryStore[id] ?? (getFounder(id) ? defaultMemory(getFounder(id)!) : []);
+  memoryStore[id] = [created, ...existing];
+  return created;
+}
+
