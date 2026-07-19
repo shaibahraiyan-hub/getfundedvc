@@ -34,7 +34,7 @@ export const Route = createFileRoute("/founders/$id")({
   component: FounderWorkspace,
 });
 
-const tabs = ["Overview", "Research", "Evidence", "Interview", "Investment Memo", "Timeline"] as const;
+const tabs = ["Overview", "Memory", "Research", "Evidence", "Interview", "Investment Memo", "Timeline"] as const;
 type Tab = (typeof tabs)[number];
 
 function FounderWorkspace() {
