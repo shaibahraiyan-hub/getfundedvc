@@ -11,6 +11,7 @@ import {
   LogOut,
   Brain,
 } from "lucide-react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 import {
   Sidebar,
@@ -96,21 +97,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Elena Rodriguez" className="gap-2.5">
-              <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-                ER
-              </div>
-              {!collapsed && (
-                <div className="min-w-0 flex-1 text-left">
-                  <div className="truncate text-sm font-medium">Elena Rodriguez</div>
-                  <div className="truncate text-[11px] text-muted-foreground">
-                    General Partner
-                  </div>
-                </div>
-              )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          <CurrentUserMenuItem collapsed={collapsed} />
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="Log out">
               <LogOut className="h-4 w-4" />
@@ -120,5 +107,26 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function CurrentUserMenuItem({ collapsed }: { collapsed: boolean }) {
+  const { displayName, initials, email } = useCurrentUser();
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton tooltip={displayName} className="gap-2.5">
+        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+          {initials}
+        </div>
+        {!collapsed && (
+          <div className="min-w-0 flex-1 text-left">
+            <div className="truncate text-sm font-medium">{displayName}</div>
+            <div className="truncate text-[11px] text-muted-foreground">
+              {email || "Signed in"}
+            </div>
+          </div>
+        )}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }

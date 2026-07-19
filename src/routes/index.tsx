@@ -4,6 +4,7 @@ import { KpiCard } from "@/components/kpi-card";
 import { Pipeline } from "@/components/pipeline";
 import { FounderCard } from "@/components/founder-card";
 import { founders, kpis } from "@/features/founders/data";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const recent = founders.slice(0, 6);
+  const { firstName } = useCurrentUser();
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -25,7 +27,7 @@ function Dashboard() {
             Mission control
           </div>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Welcome back, Elena
+            Welcome back, {firstName}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Nine memos queued for this week's IC. Two founders moved to Decision overnight.
