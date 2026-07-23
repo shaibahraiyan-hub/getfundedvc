@@ -1,7 +1,7 @@
 import { foundersByStage } from "@/features/founders/data";
 import { ChevronRight } from "lucide-react";
 
-const stages = ["Discovery", "Screening", "Diligence", "Interview", "Decision"] as const;
+const stages = ["Discovery", "Screening", "Diligence", "Decision"] as const;
 
 export function Pipeline() {
   const buckets = foundersByStage();
