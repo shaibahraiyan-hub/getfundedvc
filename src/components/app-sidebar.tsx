@@ -1,4 +1,6 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   LayoutDashboard,
   Search,
@@ -10,6 +12,7 @@ import {
   Brain,
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   Sidebar,
@@ -38,9 +41,23 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
+
+  async function handleSignOut() {
+    try {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      await supabase.auth.signOut();
+      toast.success("Signed out");
+      navigate({ to: "/auth", replace: true });
+    } catch (e) {
+      toast.error("Could not sign out");
+    }
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -95,7 +112,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <CurrentUserMenuItem collapsed={collapsed} />
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Log out">
+            <SidebarMenuButton tooltip="Log out" onClick={handleSignOut}>
               <LogOut className="h-4 w-4" />
               {!collapsed && <span>Log out</span>}
             </SidebarMenuButton>
