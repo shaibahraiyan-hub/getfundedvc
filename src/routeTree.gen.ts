@@ -13,10 +13,8 @@ import { Route as SourcingRouteImport } from './routes/sourcing'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ScreeningRouteImport } from './routes/screening'
-import { Route as InterviewRouteImport } from './routes/interview'
 import { Route as FoundersRouteImport } from './routes/founders'
 import { Route as DiligenceRouteImport } from './routes/diligence'
-import { Route as CommitteeRouteImport } from './routes/committee'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FoundersIndexRouteImport } from './routes/founders.index'
 import { Route as FoundersIdRouteImport } from './routes/founders.$id'
@@ -41,11 +39,6 @@ const ScreeningRoute = ScreeningRouteImport.update({
   path: '/screening',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InterviewRoute = InterviewRouteImport.update({
-  id: '/interview',
-  path: '/interview',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FoundersRoute = FoundersRouteImport.update({
   id: '/founders',
   path: '/founders',
@@ -54,11 +47,6 @@ const FoundersRoute = FoundersRouteImport.update({
 const DiligenceRoute = DiligenceRouteImport.update({
   id: '/diligence',
   path: '/diligence',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CommitteeRoute = CommitteeRouteImport.update({
-  id: '/committee',
-  path: '/committee',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -79,10 +67,8 @@ const FoundersIdRoute = FoundersIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/committee': typeof CommitteeRoute
   '/diligence': typeof DiligenceRoute
   '/founders': typeof FoundersRouteWithChildren
-  '/interview': typeof InterviewRoute
   '/screening': typeof ScreeningRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -92,9 +78,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/committee': typeof CommitteeRoute
   '/diligence': typeof DiligenceRoute
-  '/interview': typeof InterviewRoute
   '/screening': typeof ScreeningRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -105,10 +89,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/committee': typeof CommitteeRoute
   '/diligence': typeof DiligenceRoute
   '/founders': typeof FoundersRouteWithChildren
-  '/interview': typeof InterviewRoute
   '/screening': typeof ScreeningRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -120,10 +102,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/committee'
     | '/diligence'
     | '/founders'
-    | '/interview'
     | '/screening'
     | '/settings'
     | '/sitemap.xml'
@@ -133,9 +113,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/committee'
     | '/diligence'
-    | '/interview'
     | '/screening'
     | '/settings'
     | '/sitemap.xml'
@@ -145,10 +123,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/committee'
     | '/diligence'
     | '/founders'
-    | '/interview'
     | '/screening'
     | '/settings'
     | '/sitemap.xml'
@@ -159,10 +135,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CommitteeRoute: typeof CommitteeRoute
   DiligenceRoute: typeof DiligenceRoute
   FoundersRoute: typeof FoundersRouteWithChildren
-  InterviewRoute: typeof InterviewRoute
   ScreeningRoute: typeof ScreeningRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -199,13 +173,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScreeningRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/interview': {
-      id: '/interview'
-      path: '/interview'
-      fullPath: '/interview'
-      preLoaderRoute: typeof InterviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/founders': {
       id: '/founders'
       path: '/founders'
@@ -218,13 +185,6 @@ declare module '@tanstack/react-router' {
       path: '/diligence'
       fullPath: '/diligence'
       preLoaderRoute: typeof DiligenceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/committee': {
-      id: '/committee'
-      path: '/committee'
-      fullPath: '/committee'
-      preLoaderRoute: typeof CommitteeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -267,10 +227,8 @@ const FoundersRouteWithChildren = FoundersRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CommitteeRoute: CommitteeRoute,
   DiligenceRoute: DiligenceRoute,
   FoundersRoute: FoundersRouteWithChildren,
-  InterviewRoute: InterviewRoute,
   ScreeningRoute: ScreeningRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
