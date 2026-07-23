@@ -5,8 +5,6 @@ import {
   Users,
   ClipboardCheck,
   FileSearch,
-  MessageSquare,
-  Gavel,
   Settings,
   LogOut,
   Brain,
