@@ -30,7 +30,7 @@ export function AuthScreen() {
           },
         });
         if (error) throw error;
-        toast.success("Welcome to Get Funded");
+        toast.success("Welcome to New Founders");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -65,7 +65,7 @@ export function AuthScreen() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <Brain className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">Get Funded</h1>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">New Founders</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             AI operating system for venture capital
           </p>
