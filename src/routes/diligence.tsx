@@ -5,7 +5,7 @@ import { FileSearch, ShieldCheck, Users, DollarSign } from "lucide-react";
 export const Route = createFileRoute("/diligence")({
   head: () => ({
     meta: [
-      { title: "Diligence · Get Funded" },
+      { title: "Diligence · New Founders" },
       { name: "description", content: "Structured diligence with evidence-backed conclusions." },
     ],
   }),

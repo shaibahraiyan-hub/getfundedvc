@@ -5,7 +5,7 @@ import { founders } from "@/features/founders/data";
 export const Route = createFileRoute("/founders/")({
   head: () => ({
     meta: [
-      { title: "Founder Workspace · Get Funded" },
+      { title: "Founder Workspace · New Founders" },
       { name: "description", content: "Every founder in your pipeline." },
     ],
   }),

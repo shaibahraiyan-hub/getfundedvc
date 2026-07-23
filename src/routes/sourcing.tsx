@@ -18,7 +18,7 @@ import { MapPin, Linkedin } from "lucide-react";
 export const Route = createFileRoute("/sourcing")({
   head: () => ({
     meta: [
-      { title: "Sourcing · Get Funded" },
+      { title: "Sourcing · New Founders" },
       { name: "description", content: "Discover exceptional first-time founders with live GitHub + Semantic Scholar signals." },
     ],
   }),

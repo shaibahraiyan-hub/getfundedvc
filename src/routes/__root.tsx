@@ -24,7 +24,7 @@ function NotFoundComponent() {
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          This route doesn't exist in Get Funded.
+          This route doesn't exist in New Founders.
         </p>
         <div className="mt-6">
           <Link
@@ -82,14 +82,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Get Funded — AI-powered venture capital operating system" },
+      { title: "New Founders — AI-powered venture capital operating system" },
       {
         name: "description",
         content:
-          "Discover, evaluate, and decide on first-time founders. Get Funded unifies sourcing, diligence, interviews, and investment memos in one workspace.",
+          "Discover, evaluate, and decide on first-time founders. New Founders unifies sourcing, diligence, interviews, and investment memos in one workspace.",
       },
-      { name: "author", content: "Get Funded" },
-      { property: "og:title", content: "Get Funded — AI-powered VC operating system" },
+      { name: "author", content: "New Founders" },
+      { property: "og:title", content: "New Founders — AI-powered VC operating system" },
       {
         property: "og:description",
         content:

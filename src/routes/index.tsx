@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Users, TrendingUp, MessageSquare, FileText, Activity, Shield, GitBranch, Layers } from "lucide-react";
+import { Users, TrendingUp, FileText, Activity, Shield, GitBranch, Layers } from "lucide-react";
 import { KpiCard } from "@/components/kpi-card";
 import { Pipeline } from "@/components/pipeline";
 import { FounderCard } from "@/components/founder-card";
@@ -9,7 +9,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard · Get Funded" },
+      { title: "Dashboard · New Founders" },
       { name: "description", content: "Mission control for your investment pipeline." },
     ],
   }),
@@ -30,7 +30,7 @@ function Dashboard() {
             Welcome back, {firstName}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Nine memos queued for this week's IC. Two founders moved to Decision overnight.
+            Nine memos queued for this week. Two founders moved to Decision overnight.
           </p>
         </div>
       </div>
@@ -38,8 +38,7 @@ function Dashboard() {
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard label="Founders tracked" value={kpis.foundersTracked} delta="+47 this week" positive icon={Users} />
         <KpiCard label="New this week" value={kpis.newThisWeek} delta="+12% vs last" positive icon={TrendingUp} />
-        <KpiCard label="Interviews completed" value={kpis.interviewsCompleted} delta="4 scheduled today" icon={MessageSquare} />
-        <KpiCard label="Memos ready" value={kpis.memosReady} delta="IC on Thursday" icon={FileText} />
+        <KpiCard label="Memos ready" value={kpis.memosReady} delta="Review Thursday" icon={FileText} />
         <KpiCard label="Avg founder score" value={kpis.avgFounderScore} suffix="/100" icon={Activity} />
         <KpiCard label="Avg trust score" value={kpis.avgTrustScore} suffix="/100" icon={Shield} />
         <KpiCard label="Pipeline health" value={kpis.pipelineHealth} suffix="/100" icon={GitBranch} />

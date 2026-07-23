@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings · Get Funded" },
+      { title: "Settings · New Founders" },
       { name: "description", content: "Configure your investment thesis and workspace." },
     ],
   }),
@@ -89,7 +89,7 @@ function Settings() {
       <Section title="AI & models" subtitle="Choose the default model for evaluation.">
         <Field label="Default AI model">
           <select className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm">
-            <option>Get Funded default (auto)</option>
+            <option>New Founders default (auto)</option>
             <option>High-fidelity (long-context)</option>
             <option>Fast (throughput)</option>
           </select>
