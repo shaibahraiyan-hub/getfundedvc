@@ -4,7 +4,7 @@ AI-powered venture capital operating system for founder discovery, screening, an
 
 ## About
 
-New Founders helps investors identify promising startup founders by combining live data from GitHub and Semantic Scholar with an AI scoring engine. The platform scores founders across multiple dimensions: founder quality, market opportunity, idea-market fit, and trust/verification.
+New Founders helps investors identify promising startup founders—including first-time, non-traditional founders who may not have a prior track record or business experience, but possess strong technical skills and deep domain knowledge. By combining live data from GitHub and Semantic Scholar with an AI scoring engine, the platform evaluates founders across multiple dimensions: founder quality, market opportunity, idea-market fit, and trust/verification.
 
 ## Features
 
