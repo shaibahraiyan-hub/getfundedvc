@@ -1,5 +1,5 @@
 # New Founders
-
+https://newfounders.lovable.app
 AI-powered venture capital operating system for founder discovery, screening, and evaluation.
 
 ## About
